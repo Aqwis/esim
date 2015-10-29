@@ -1,3 +1,5 @@
+import random
+
 from copy import copy
 
 from actors import Person, Company, Resource
@@ -11,22 +13,19 @@ class WorldState(object):
 class Simulation(object):
 	def __init__(self):
 		# Parameters
-
-		self.POPULATION = 50
+		self.POPULATION = 5000
 
 		# State
-
 		self.state = WorldState()
 
 		# Statistics
-
 		self.state_by_year = {}
 
 		for p in range(self.POPULATION):
 			self.state.people.append(Person())
 
 		self.state.resources['water'] = Resource('water', 5000000, 1000000)
-		self.state.resources['easily_obtainable_food'] = Resource('easily_obtainable_food', 0, 150)
+		self.state.resources['easily_obtainable_food'] = Resource('easily_obtainable_food', 25000, 5000)
 
 	def register_state(self):
 		self.state_by_year[self.state.year] = copy(self.state)
@@ -35,9 +34,16 @@ class Simulation(object):
 		print("Number of people alive: " + str(len(self.state.people)))
 		print("År: " + str(self.state.year))
 
+	def write_population_statistics_to_csv(self):
+		population_tuple_list = sorted([(year, len(state.people)) for year, state in self.state_by_year.items()], key=lambda x: x[0])
+		with open('population.csv', 'w+') as popfile:
+			for year, population in population_tuple_list:
+				popfile.write('%s,%s\n' % (year, population,))
+
 	def loop(self):
 		self.state.people = [person for person in self.state.people if not person.dead]
 
+		random.shuffle(self.state.people)
 		for person in self.state.people:
 			person.live(self.state)
 
@@ -52,6 +58,8 @@ class Simulation(object):
 			self.state.year += 1
 		self.register_state()
 		self.display_state()
+
+		self.write_population_statistics_to_csv()
 			
 
 def main():

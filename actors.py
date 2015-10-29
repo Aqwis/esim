@@ -1,4 +1,6 @@
 import random
+import uuid
+
 
 class Person(object):
 	def __init__(self):
@@ -15,6 +17,8 @@ class Person(object):
 		self.resource_deficit = 0
 		self.ill = False
 		self.dead = False
+
+		self.id = uuid.uuid4()
 
 	def check_if_dead(self):
 		if len(self.illnesses) >= 2:
@@ -34,7 +38,6 @@ class Person(object):
 		for resource, amount_required in self.required_resources.items():
 			consumed = state.resources[resource].consume(amount_required)
 			if consumed < amount_required:
-				print("TOO LITTLE!")
 				self.resource_deficit += (amount_required - consumed)
 
 	def live(self, state):
@@ -57,7 +60,7 @@ class Resource(object):
 			self.abundance = self.abundance - amount
 			return amount
 		else:
-			consumed = amount - self.abundance
+			consumed = self.abundance
 			self.abundance = 0
 			return consumed
 
