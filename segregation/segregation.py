@@ -6,22 +6,27 @@
 import numpy
 import matplotlib.pyplot as plt
 
-from random import random
+from random import random, choice
 
 Px = 0.2 # Probability of kind X
 Po = 0.1 # Probability of kind O
 # 1-Px-Po is the probability of a position being empty
 
-INFLUENCE_PERIMETER = 12 # Number of positions on each side of an individual that the individual cares about
-MOVE_PERIMETER = 12 # Number of positions away from its current position an individual can move
+INFLUENCE_PERIMETER = 6 # Number of positions on each side of an individual that the individual cares about
+MOVE_PERIMETER = 6 # Number of positions away from its current position an individual can move
 LIMIT = 0.6 # Ratio of same/(other+same), below which individual wants to move
 
+MOVE_TO_BETTER = 'move-to-better'
+MOVE_TO_BEST_ALTERNATIVE = 'move-to-best-alternative'
+MOVE_RANDOMLY = 'move-randomly'
+
 class SegregationSystem:
-	def __init__(self, n, influence_perimeter, move_perimeter, limit, debug=False):
+	def __init__(self, n, influence_perimeter, move_perimeter, limit, strategy=MOVE_TO_BETTER, debug=False):
 		self.n = n
 		self.influence_perimeter = influence_perimeter
 		self.move_perimeter = move_perimeter
 		self.limit = limit
+		self.strategy = strategy
 		self.debug = debug
 		self.matrix = numpy.zeros(shape=(n, n), dtype=object)
 
@@ -94,27 +99,48 @@ class SegregationSystem:
 		left_boundary = j-self.move_perimeter if j-self.move_perimeter >= 0 else 0
 		right_boundary = j+self.move_perimeter if j+self.move_perimeter < self.n else self.n-1
 
-		top_score = original_ratio
-		top_k = -1
-		top_l = -1
-		for k in range(top_boundary, bottom_boundary+1):
-			for l in range(left_boundary, right_boundary+1):
-				if self.matrix[k][l] == ' ':
-					self.matrix[i][j] = ' '
-					ratio = self.calculate_ratio(k, l, kind)
-					self.matrix[i][j] = kind
-					if ratio > top_score:
-						top_score = ratio
-						top_k = k
-						top_l = l
+		if self.strategy in (MOVE_TO_BETTER, MOVE_TO_BEST_ALTERNATIVE):
+			reference = 0
+			top_score = 0
+			if self.strategy == MOVE_TO_BETTER:
+				reference = original_ratio
+				top_score = original_ratio
+			top_k = -1
+			top_l = -1
+			for k in range(top_boundary, bottom_boundary+1):
+				for l in range(left_boundary, right_boundary+1):
+					if self.matrix[k][l] == ' ':
+						self.matrix[i][j] = ' '
+						ratio = self.calculate_ratio(k, l, kind)
+						self.matrix[i][j] = kind
+						if ratio > top_score:
+							top_score = ratio
+							top_k = k
+							top_l = l
 
-		if top_k != -1 and top_l != -1 and top_score > original_ratio:
+			if top_k != -1 and top_l != -1 and top_score > reference:
+				self.matrix[i][j] = ' '
+				self.matrix[top_k][top_l] = kind
+				if self.debug:
+					print('Moved (%s, %s) to (%s, %s)' % (i, j, top_k, top_l,))
+				return True # moved
+			return False # did not move
+		elif self.strategy == MOVE_RANDOMLY:
+			available = []
+			for k in range(top_boundary, bottom_boundary+1):
+				for l in range(left_boundary, right_boundary+1):
+					if self.matrix[k][l] == ' ':
+						available.append((k, l))
+			if len(available) == 0:
+				return False # did not move
+			new_position = choice(available)
 			self.matrix[i][j] = ' '
-			self.matrix[top_k][top_l] = kind
+			self.matrix[new_position[0]][new_position[1]] = kind
 			if self.debug:
-				print('Moved (%s, %s) to (%s, %s)' % (i, j, top_k, top_l,))
+				print('Moved (%s, %s) to (%s, %s)' % (i, j, new_position[0], new_position[1],))
 			return True # moved
-		return False # did not move
+		else:
+			raise Exception('Invalid strategy "%s"' % (self.strategy,))
 
 	def run(self):
 		number_moved = 0
@@ -171,8 +197,8 @@ def plot(matrix):
 	plt.savefig('output.png')
 
 def main():
-	system = SegregationSystem(200, INFLUENCE_PERIMETER, MOVE_PERIMETER, LIMIT)
-	matrix = system.simulate(20)
+	system = SegregationSystem(80, INFLUENCE_PERIMETER, MOVE_PERIMETER, LIMIT, strategy=MOVE_RANDOMLY)
+	matrix = system.simulate(20) # should be higher when using the strategy MOVE_RANDOMLY
 	plot(matrix)
 
 if __name__ == "__main__":
