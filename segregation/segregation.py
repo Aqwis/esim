@@ -4,6 +4,7 @@
 ## http://nifty.stanford.edu/2014/mccown-schelling-model-segregation/
 
 import numpy
+import matplotlib.pyplot as plt
 
 from random import random
 
@@ -11,16 +12,17 @@ Px = 0.2 # Probability of kind X
 Po = 0.1 # Probability of kind O
 # 1-Px-Po is the probability of a position being empty
 
-INFLUENCE_PERIMETER = 2 # Number of positions on each side of an individual that the individual cares about
-MOVE_PERIMETER = 2 # Number of positions away from its current position an individual can move
+INFLUENCE_PERIMETER = 12 # Number of positions on each side of an individual that the individual cares about
+MOVE_PERIMETER = 12 # Number of positions away from its current position an individual can move
 LIMIT = 0.6 # Ratio of same/(other+same), below which individual wants to move
 
 class SegregationSystem:
-	def __init__(self, n, influence_perimeter, move_perimeter, limit):
+	def __init__(self, n, influence_perimeter, move_perimeter, limit, debug=False):
 		self.n = n
 		self.influence_perimeter = influence_perimeter
 		self.move_perimeter = move_perimeter
 		self.limit = limit
+		self.debug = debug
 		self.matrix = numpy.zeros(shape=(n, n), dtype=object)
 
 		for i in range(self.n):
@@ -109,7 +111,8 @@ class SegregationSystem:
 		if top_k != -1 and top_l != -1 and top_score > original_ratio:
 			self.matrix[i][j] = ' '
 			self.matrix[top_k][top_l] = kind
-			print('Moved (%s, %s) to (%s, %s)' % (i, j, top_k, top_l,))
+			if self.debug:
+				print('Moved (%s, %s) to (%s, %s)' % (i, j, top_k, top_l,))
 			return True # moved
 		return False # did not move
 
@@ -125,19 +128,20 @@ class SegregationSystem:
 	def run_rounds(self, round_count):
 		rounds_finished = 0
 		for r in range(round_count):
-			print('\nNew round:')
-			print(self.matrix)
+			if self.debug:
+				print('\nNew round:')
+				print(self.matrix)
 			number_moved = self.run()
-			print(number_moved)
 
 			if number_moved == 0:
 				print('Converged after running %s rounds' % (rounds_finished,))
 				return
 
 			rounds_finished += 1
-			input()
+			if self.debug:
+				input()
 
-	def start(self, round_count):
+	def simulate(self, round_count):
 		start_matrix = numpy.matrix.copy(self.matrix)
 		self.run_rounds(round_count)
 
@@ -147,9 +151,29 @@ class SegregationSystem:
 		print('\nEnd matrix:')
 		print(self.matrix)
 
+		return self.matrix
+
+def plot(matrix):
+	n = matrix.shape[0]
+	num_matrix = numpy.zeros(shape=(n, n))
+	for k in range(matrix.shape[0]):
+		for l in range(matrix.shape[1]):
+			if matrix[k][l] == 'X':
+				num_matrix[k][l] = 1;
+			elif matrix[k][l] == 'O':
+				num_matrix[k][l] = -1;
+			elif matrix[k][l] == ' ':
+				num_matrix[k][l] = 0;
+			else:
+				raise Exception('Position (%s, %s) contained invalid element!' % (k, l,))
+
+	plt.matshow(num_matrix)
+	plt.savefig('output.png')
+
 def main():
-	system = SegregationSystem(18, INFLUENCE_PERIMETER, MOVE_PERIMETER, LIMIT)
-	system.start(20)
+	system = SegregationSystem(200, INFLUENCE_PERIMETER, MOVE_PERIMETER, LIMIT)
+	matrix = system.simulate(20)
+	plot(matrix)
 
 if __name__ == "__main__":
 	main()
