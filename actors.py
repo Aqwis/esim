@@ -67,6 +67,7 @@ class Resource(object):
 	def act(self):
 		self.abundance += self.regeneration_rate
 
+
 class Company(object):
 	pass
 
