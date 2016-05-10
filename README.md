@@ -1,2 +1,3 @@
 # esim
-Esim
+
+Experiments with agent-based simulations.
