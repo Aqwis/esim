@@ -6,15 +6,15 @@
 import numpy
 import matplotlib.pyplot as plt
 
-from random import random, choice
+from random import random, choice, shuffle
 
-Px = 0.2 # Probability of kind X
-Po = 0.1 # Probability of kind O
+Px = 0.45 # Probability of kind X
+Po = 0.45 # Probability of kind O
 # 1-Px-Po is the probability of a position being empty
 
-INFLUENCE_PERIMETER = 6 # Number of positions on each side of an individual that the individual cares about
-MOVE_PERIMETER = 6 # Number of positions away from its current position an individual can move
-LIMIT = 0.6 # Ratio of same/(other+same), below which individual wants to move
+INFLUENCE_PERIMETER = 1 # Number of positions on each side of an individual that the individual cares about
+MOVE_PERIMETER = 5 # Number of positions away from its current position an individual can move
+LIMIT = 0.99 # Ratio of same/(other+same), below which individual wants to move
 
 MOVE_TO_BETTER = 'move-to-better'
 MOVE_TO_BEST_ALTERNATIVE = 'move-to-best-alternative'
@@ -144,11 +144,21 @@ class SegregationSystem:
 
 	def run(self):
 		number_moved = 0
-		for i in range(self.n):
-			for j in range(self.n):
-				if self.check(i, j):
-					if self.move(i, j):
-						number_moved += 1
+
+		x = list(range(self.n))
+		y = list(range(self.n))
+		shuffle(x)
+		shuffle(y)
+
+		positions = zip(x, y)
+
+		for p in positions:
+			i = p[0]
+			j = p[1]
+			if self.check(i, j):
+				if self.move(i, j):
+					number_moved += 1
+
 		return number_moved
 
 	def run_rounds(self, round_count):
@@ -197,8 +207,8 @@ def plot(matrix):
 	plt.savefig('output.png')
 
 def main():
-	system = SegregationSystem(80, INFLUENCE_PERIMETER, MOVE_PERIMETER, LIMIT, strategy=MOVE_RANDOMLY)
-	matrix = system.simulate(20) # should be higher when using the strategy MOVE_RANDOMLY
+	system = SegregationSystem(50, INFLUENCE_PERIMETER, MOVE_PERIMETER, LIMIT, strategy=MOVE_TO_BETTER)
+	matrix = system.simulate(500) # should be higher when using the strategy MOVE_RANDOMLY
 	plot(matrix)
 
 if __name__ == "__main__":
